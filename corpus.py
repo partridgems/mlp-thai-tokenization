@@ -58,7 +58,6 @@ class Character(Document):
     """
     def sequence_features(self, current_time_step, sequence):
         features = ['T0=%s' % sequence[current_time_step].data[1]]
-        features.append('**BIAS TERM**')
         if current_time_step == 0:
             features.append('T-1=START')
         else:
@@ -81,7 +80,6 @@ class Character2(Document):
     def sequence_features(self, current_time_step, sequence):
         features = ['T0=%s' % sequence[current_time_step].data[1],
                 'T0=%s' % sequence[current_time_step].data[0]]
-        features.append('**BIAS TERM**')
         for i in range(1, 2+1):
             if (current_time_step + i) >= len(sequence):
                 features.append('T+%s=END' % i)
