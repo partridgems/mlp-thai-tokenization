@@ -9,6 +9,7 @@ from csv import reader as csv_reader
 from glob import glob
 import json
 from os.path import basename, dirname, split, splitext
+import numpy as np
 
 class Sequence(object):
 
@@ -109,11 +110,11 @@ class Corpus(object):
 
     __metaclass__ = ABCMeta
 
-    def __init__(self, datafiles, document_class=Document):
+    def __init__(self, datafiles, document_class=Document, vec_file=None):
         self.documents = []
         self.datafiles = glob(datafiles)
         for datafile in self.datafiles:
-            self.load(datafile, document_class)
+            self.load(datafile, document_class, vec_file)
 
     # Act as a mutable container for documents.
     def __len__(self): return len(self.documents)
@@ -123,13 +124,13 @@ class Corpus(object):
     def __delitem__(self, key): del self.documents[key]
 
     @abstractmethod
-    def load(self, datafile, document_class):
+    def load(self, datafile, document_class, vec_file):
         """Make labeled document instances for the data in a file."""
         pass
 
 class ThaiWordCorpus(Corpus):
 
-    def load(self, datafile, document_class=Character):
+    def load(self, datafile, document_class=Character, vec_file=None):
         with open(datafile) as file:
             sequence = []
             line_number = 0
@@ -157,3 +158,25 @@ class ThaiWordCorpus(Corpus):
                 if document.label not in self.label_codebook:
                    self.label_codebook[document.label] = len(self.label_codebook)
                 document.label_index = self.label_codebook[document.label]
+
+class Word2Vec(Corpus):
+
+    def load(self, datafile, document_class=CharacterTest, vec_file='thai-vectors-100.txt'):
+        # open vector file
+        vec_dict = {}
+        with open(vec_file) as vectorf:
+            for line in vectorf:
+                words = line.strip().split()
+                vec_dict[words[0]] = np.asarray([float(w) for w in words[1:]])
+
+        # use the ThaiWordCorpus machinery to save programming:
+        twc = ThaiWordCorpus(datafile, CharacterTest)
+        self.documents = [char for seq in twc for char in seq]
+
+        # now replace features with Word2Vec
+        for doc in self.documents:
+            doc.feature_vector = vec_dict[doc.data[0]]
+
+        # codebooks give dimensionality information
+        self.label_codebook = twc.label_codebook
+        self.feature_codebook = self.documents[0].feature_vector

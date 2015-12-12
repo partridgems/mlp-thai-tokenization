@@ -32,7 +32,7 @@ import theano.tensor as T
 
 
 from logistic_sgd import LogisticRegression
-from corpus import ThaiWordCorpus, Character, Character2, CharacterTest
+from corpus import ThaiWordCorpus, Character, Character2, CharacterTest, Word2Vec
 
 
 # start-snippet-1
@@ -197,7 +197,7 @@ class MLP(object):
 
 
 def test_mlp(learning_rate=0.01, L1_reg=0.00, L2_reg=0.0001, n_epochs=1000,
-             batch_size=20, n_hidden=500, features=Character):
+             batch_size=20, n_hidden=500, features=Character, vec_file=None):
     """
     Demonstrate stochastic gradient descent optimization for a multilayer
     perceptron
@@ -220,7 +220,7 @@ def test_mlp(learning_rate=0.01, L1_reg=0.00, L2_reg=0.0001, n_epochs=1000,
     :param n_epochs: maximal number of epochs to run the optimizer
 
    """
-    datasets = load_data(features)
+    datasets = load_data(features, vec_file)
 
     train_set_x, train_set_y = datasets[0]
     valid_set_x, valid_set_y = datasets[1]
@@ -321,7 +321,7 @@ def test_mlp(learning_rate=0.01, L1_reg=0.00, L2_reg=0.0001, n_epochs=1000,
     print '... training'
 
     # early-stopping parameters
-    patience = 100000  # look as this many examples regardless
+    patience = 10000  # look as this many examples regardless
     patience_increase = 2  # wait this much longer when a new best is
                            # found
     improvement_threshold = 0.995  # a relative improvement of this much is
@@ -401,7 +401,49 @@ def test_mlp(learning_rate=0.01, L1_reg=0.00, L2_reg=0.0001, n_epochs=1000,
                           os.path.split(__file__)[1] +
                           ' ran for %.2fm' % ((end_time - start_time) / 60.))
 
-def load_data(features):
+def load_data(feature_type, vec_file=None):
+    features = []
+    labels = []
+
+    if (type(feature_type) == type(Word2Vec)):
+        features, labels, dataset = load_word2vec(vec_file)
+    else:
+        features, labels, dataset = load_ling(feature_type)
+
+    train = ( numpy.array(features[0:50000]),
+        numpy.array(labels[0:50000]) )
+    dev = ( numpy.array(features[50000:55000]),
+        numpy.array(labels[50000:55000]) )
+    test = ( numpy.array(features[55000:70000]),
+        numpy.array(labels[55000:70000]) )
+
+    test_set_x, test_set_y = shared_dataset(test)
+    valid_set_x, valid_set_y = shared_dataset(dev)
+    train_set_x, train_set_y = shared_dataset(train)
+
+    rval = [(train_set_x, train_set_y), (valid_set_x, valid_set_y),
+            (test_set_x, test_set_y), dataset]
+    return rval
+
+"""Adapt the Word2Vec corpus for MLP processing
+(list of labels, list of dense feature vectors)"""
+def load_word2vec(vec_file):
+
+    print '... loading data'
+
+    datasets = Word2Vec('orchid97_features.bio', None, vec_file)
+
+    features = []
+    labels = []
+    for doc in datasets.documents:
+        features += [doc.feature_vector]
+        labels += [doc.label_index]
+
+    return features, labels, datasets
+
+
+"""Adapt our style of corpus for MLP processing (dense features)"""
+def load_ling(features):
 
     print '... loading data'
 
@@ -418,48 +460,36 @@ def load_data(features):
         dense_features += [dense_vec]
         labels += [doc.label_index]
 
+    return dense_features, labels, thai_datasets
 
-    train = ( numpy.array(dense_features[0:50000]),
-        numpy.array(labels[0:50000]) )
-    dev = ( numpy.array(dense_features[50000:55000]),
-        numpy.array(labels[50000:55000]) )
-    test = ( numpy.array(dense_features[55000:70000]),
-        numpy.array(labels[55000:70000]) )
 
-    def shared_dataset(data_xy, borrow=True):
-        """ Function that loads the dataset into shared variables
+def shared_dataset(data_xy, borrow=True):
+    """ Function that loads the dataset into shared variables
 
-        The reason we store our dataset in shared variables is to allow
-        Theano to copy it into the GPU memory (when code is run on GPU).
-        Since copying data into the GPU is slow, copying a minibatch everytime
-        is needed (the default behaviour if the data is not in a shared
-        variable) would lead to a large decrease in performance.
-        """
-        data_x, data_y = data_xy
-        shared_x = theano.shared(numpy.asarray(data_x,
-                                               dtype=theano.config.floatX),
-                                 borrow=borrow)
-        shared_y = theano.shared(numpy.asarray(data_y,
-                                               dtype=theano.config.floatX),
-                                 borrow=borrow)
-        # When storing data on the GPU it has to be stored as floats
-        # therefore we will store the labels as ``floatX`` as well
-        # (``shared_y`` does exactly that). But during our computations
-        # we need them as ints (we use labels as index, and if they are
-        # floats it doesn't make sense) therefore instead of returning
-        # ``shared_y`` we will have to cast it to int. This little hack
-        # lets ous get around this issue
-        return shared_x, T.cast(shared_y, 'int32')
-
-    test_set_x, test_set_y = shared_dataset(test)
-    valid_set_x, valid_set_y = shared_dataset(dev)
-    train_set_x, train_set_y = shared_dataset(train)
-
-    rval = [(train_set_x, train_set_y), (valid_set_x, valid_set_y),
-            (test_set_x, test_set_y), thai_datasets]
-    return rval
+    The reason we store our dataset in shared variables is to allow
+    Theano to copy it into the GPU memory (when code is run on GPU).
+    Since copying data into the GPU is slow, copying a minibatch everytime
+    is needed (the default behaviour if the data is not in a shared
+    variable) would lead to a large decrease in performance.
+    """
+    data_x, data_y = data_xy
+    shared_x = theano.shared(numpy.asarray(data_x,
+                                           dtype=theano.config.floatX),
+                             borrow=borrow)
+    shared_y = theano.shared(numpy.asarray(data_y,
+                                           dtype=theano.config.floatX),
+                             borrow=borrow)
+    # When storing data on the GPU it has to be stored as floats
+    # therefore we will store the labels as ``floatX`` as well
+    # (``shared_y`` does exactly that). But during our computations
+    # we need them as ints (we use labels as index, and if they are
+    # floats it doesn't make sense) therefore instead of returning
+    # ``shared_y`` we will have to cast it to int. This little hack
+    # lets ous get around this issue
+    return shared_x, T.cast(shared_y, 'int32')
 
 
 if __name__ == '__main__':
-    test_mlp(learning_rate=0.0001, L1_reg=0.00, L2_reg=0.0001,
-        n_epochs=2000, batch_size=200, n_hidden=100, features=Character)
+    test_mlp(learning_rate=0.01, L1_reg=0.00, L2_reg=0.0001,
+        n_epochs=1000, batch_size=200, n_hidden=100, features=Word2Vec,
+        vec_file='../word2vec/thai-vectors-100.txt')
