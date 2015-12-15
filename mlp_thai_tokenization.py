@@ -1,21 +1,11 @@
 """
-This tutorial introduces the multilayer perceptron using Theano.
+Multilayer Perceptron from deeplearning.net
 
- A multilayer perceptron is a logistic regressor where
-instead of feeding the input to the logistic regression you insert a
-intermediate layer, called the hidden layer, that has a nonlinear
-activation function (usually tanh or sigmoid) . One can use many such
-hidden layers making the architecture deep. The tutorial will also tackle
-the problem of MNIST digit classification.
+Modified by Michael Partridge
 
-.. math::
+See mlp.py for the original version
 
-    f(x) = G( b^{(2)} + W^{(2)}( s( b^{(1)} + W^{(1)} x))),
-
-References:
-
-    - textbooks: "Pattern Recognition and Machine Learning" -
-                 Christopher M. Bishop, section 5
+To Run: see the functions in comments at the bottom of this file.
 
 """
 __docformat__ = 'restructedtext en'
@@ -729,9 +719,28 @@ def shared_dataset(data_xy, borrow=True):
 
 
 if __name__ == '__main__':
-    h = [0,1,2,5,10,20,50,100,500,600,1000,2000,5000,10000]
-    for n_h in h:
-        print '*****************HIDDEN LAYER SIZE: %d' % n_h
-        test_mlp(learning_rate=0.001, L1_reg=0.00, L2_reg=0.0000,
-        n_epochs=1000, batch_size=200, n_hidden=n_h, features=Character,
-        vec_file='../word2vec/thai-vectors-100.txt')
+    # To Run a Test, Uncomment one or more of the following function calls
+
+    """ BEST ACCURACY
+    4.56% error on test data and 86 minute running time """
+    # test_mlp(learning_rate=0.001, L1_reg=0.00, L2_reg=0.0000,
+    #     n_epochs=1000, batch_size=200, n_hidden=20, features=Character2,
+    #     vec_file='')
+
+    """ BEST ACCURACY UNDER 1 MINUTE RUNNING TIME
+    5.87% error on test data and less than 1 minute running time """
+    test_mlp(learning_rate=0.001, L1_reg=0.00, L2_reg=0.0000,
+        n_epochs=1000, batch_size=200, n_hidden=5, features=Character2,
+        vec_file='')
+
+    """ BEST ACCURACY WITH CHARACTER FEATURES
+    10.95% error on test data and less than 1 minute running time """
+    # test_mlp(learning_rate=0.001, L1_reg=0.00, L2_reg=0.0000,
+    #     n_epochs=1000, batch_size=200, n_hidden=5, features=Character,
+    #     vec_file='')
+
+    """ Word2Vec
+    indicate path to vector file below """
+    # test_mlp(learning_rate=0.001, L1_reg=0.00, L2_reg=0.0001,
+    #     n_epochs=1000, batch_size=200, n_hidden=100, features=Word2Vec,
+    #     vec_file='./word2vec path/word2vec vectors file (text)')
