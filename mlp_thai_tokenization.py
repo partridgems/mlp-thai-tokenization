@@ -723,24 +723,24 @@ if __name__ == '__main__':
 
     """ BEST ACCURACY
     4.56% error on test data and 86 minute running time """
-    # test_mlp(learning_rate=0.001, L1_reg=0.00, L2_reg=0.0000,
+    # test_mlp(learning_rate=0.01, L1_reg=0.00, L2_reg=0.0000,
     #     n_epochs=1000, batch_size=200, n_hidden=20, features=Character2,
     #     vec_file='')
 
     """ BEST ACCURACY UNDER 1 MINUTE RUNNING TIME
     5.87% error on test data and less than 1 minute running time """
-    test_mlp(learning_rate=0.001, L1_reg=0.00, L2_reg=0.0000,
+    test_mlp(learning_rate=0.01, L1_reg=0.00, L2_reg=0.0000,
         n_epochs=1000, batch_size=200, n_hidden=5, features=Character2,
         vec_file='')
 
     """ BEST ACCURACY WITH CHARACTER FEATURES
     10.95% error on test data and less than 1 minute running time """
-    # test_mlp(learning_rate=0.001, L1_reg=0.00, L2_reg=0.0000,
+    # test_mlp(learning_rate=0.01, L1_reg=0.00, L2_reg=0.0000,
     #     n_epochs=1000, batch_size=200, n_hidden=5, features=Character,
     #     vec_file='')
 
     """ Word2Vec
     indicate path to vector file below """
-    # test_mlp(learning_rate=0.001, L1_reg=0.00, L2_reg=0.0001,
+    # test_mlp(learning_rate=0.01, L1_reg=0.00, L2_reg=0.0001,
     #     n_epochs=1000, batch_size=200, n_hidden=100, features=Word2Vec,
     #     vec_file='./word2vec path/word2vec vectors file (text)')
